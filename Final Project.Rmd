@@ -1,0 +1,57 @@
+---
+title: "253 Final Project"
+author: "Melissa Blum, Andrew Padgett, Tomas Panek"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r, echo=FALSE}
+#plotting and exploring
+library(tidyverse) #for plotting and summarizing
+library(GGally) #for nice scatterplot matrix 
+library(ggridges) #for joy/ridge plots
+library(corrplot) #for basic correlation matrix plot
+library(naniar) #for exploring missing values
+library(pdp) #for partial dependence plots, MARS models
+library(rpart.plot) #for plotting decision trees
+library(vip) #for importance plots
+library(pROC) #for ROC curves
+library(plotROC) #for plotting ROC curves
+
+#making things look nice
+library(lubridate) #for nice dates
+library(knitr) #for nice tables
+library(scales) #for nice labels on graphs
+library(gridExtra) #for arranging plots
+library(broom) #for nice model output
+library(janitor) #for nice names
+
+#data
+library(ISLR) #for data
+library(moderndive) #for data
+library(rattle) #weather data
+
+#modeling
+library(rsample) #for splitting data
+library(recipes) #for keeping track of transformations
+library(caret) #for modeling
+library(leaps) #for variable selection
+library(glmnet) #for LASSO
+library(earth) #for MARS models
+library(rpart) #for decision trees
+library(randomForest) #for bagging and random forests
+
+theme_set(theme_minimal())
+```
+
+I read in the diabetes hospital readmission data in case that's what we end up using. There's one paper that's been published using the same data, so I put the link to that paper below. They used a logistic regression model with many of the variables in the dataset to predict hospital readmissions of diabetic patients - I think it would be cool to try other types of models and see if we can find one that makes more accurate predictions.
+
+archive.ics.uci.edu/ml/machine-learning-databases/00296/
+
+```{r}
+diabetic_data <- read_csv("diabetic_data.csv")
+```
+

@@ -52,6 +52,15 @@ I read in the diabetes hospital readmission data in case that's what we end up u
 archive.ics.uci.edu/ml/machine-learning-databases/00296/
 
 ```{r}
-diabetic_data <- read_csv("diabetic_data.csv")
+diabetic_data <- read_csv("diabetic_data.csv", 
+    na = "?")
 ```
 
+```{r}
+head(diabetic_data)
+```
+
+Links to data and paper:
+
+http://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008#
+https://www.hindawi.com/journals/bmri/2014/781670/

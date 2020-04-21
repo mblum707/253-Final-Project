@@ -64,3 +64,23 @@ Links to data and paper:
 
 http://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008#
 https://www.hindawi.com/journals/bmri/2014/781670/
+
+```{r}
+
+ggplot(diabetic_data) +
+ aes(x = readmitted) +
+ geom_bar(fill = "#0c4c8a") +
+ theme_minimal()
+
+```
+
+```{r}
+diabetic_data %>%
+ filter(number_emergency >= 0L & number_emergency <= 19L) %>%
+ ggplot() +
+ aes(x = insulin) +
+ geom_bar(fill = "#0c4c8a") +
+ theme_minimal()
+
+```
+

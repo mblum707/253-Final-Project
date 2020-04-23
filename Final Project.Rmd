@@ -83,4 +83,42 @@ diabetic_data %>%
  theme_minimal()
 
 ```
+Table using count function for medical specialty diag 
 
+```{r}
+diabetic_data %>% count(medical_specialty) %>% arrange(n)
+
+```
+
+
+```{r, fig.height = 18, fig.width = 10}
+diabetic_data %>% 
+  select(-encounter_id, -patient_nbr, -medical_specialty, -diag_1, -diag_2, -diag_3) %>% 
+  select_if(is.character) %>% 
+  pivot_longer(cols = everything(),names_to = "variable", values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_bar() +
+    coord_flip()+
+  facet_wrap(ncol = 2, vars(variable), scales = "free")
+```
+
+
+```{r}
+diabetic_data %>% 
+  select(A1Cresult, acarbose, acetohexamide, age, change, chloropropamide) %>% 
+  select_if(is.character) %>% 
+  pivot_longer(cols = everything(),names_to = "variable", values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_bar() +
+  facet_wrap(vars(variable), scales = "free")
+```
+
+```{r}
+diabetic_data %>% 
+  select(-encounter_id, -patient_nbr) %>% 
+  select_if(is.numeric) %>% 
+  pivot_longer(cols = everything(),names_to = "variable", values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram() +
+  facet_wrap(vars(variable), scales = "free")
+```

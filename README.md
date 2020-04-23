@@ -1,3 +1,3 @@
 # 253-Final-Project
 
-Hello, this is Tom contributing to Melissa's repo!
+Melissa Blum, Andrew Padgett, Tomas Panek

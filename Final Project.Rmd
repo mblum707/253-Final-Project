@@ -93,6 +93,9 @@ ok to drop
 
 create new variables for particular diagnostic codes
 
+428, 414, 427
+276, 250, 401, 496, 403, 
+
 ```{r}
 diabetic_data %>% count(diag_1) %>% arrange(desc(n))
 ```
@@ -119,7 +122,7 @@ diabetic_data %>%
     facet_wrap(ncol = 2, vars(variable), scales = "free")
 ```
 
-Variables to exclude: troglitazone, tolbutamide, tolazamide
+Variables to exclude: troglitazone, tolbutamide, tolazamide, rosiglatazone, nateglinide, acetohexamide, metformin-piag, citoglipton, examide, 
 
 ```{r}
 diabetic_data %>% 
@@ -130,3 +133,32 @@ diabetic_data %>%
   geom_histogram() +
   facet_wrap(vars(variable), scales = "free")
 ```
+
+
+fct_lump
+n = 5 keep the most common 5 values, lump everything else into other category
+
+```{r}
+diabetic_edited_diag <- diabetic_data %>%
+  mutate(diag_1_new = fct_lump(diag_1, n = 5),
+         diag_2_new = fct_lump(diag_2, n = 5),
+         diag_3_new = fct_lump(diag_3, n = 5),
+         admission_type_id = as.factor(admission_type_id),
+         admission_source_id = as.factor(admission_source_id),
+         discharge_disposition_id = as.factor(discharge_disposition_id),
+         readmitted_30 = ifelse(readmitted == "<30", 1, 0))
+```
+
+
+```{r}
+diabetic_edited <- diabetic_data %>%
+  mutate(admission_type_id = as.factor(admission_type_id),
+         admission_source_id = as.factor(admission_source_id),
+         discharge_disposition_id = as.factor(discharge_disposition_id),
+         readmitted_30 = ifelse(readmitted == "<30", 1, 0))
+  
+```
+weight has many missing values, group together admission codes?
+
+
+

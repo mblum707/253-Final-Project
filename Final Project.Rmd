@@ -135,9 +135,6 @@ diabetic_data %>%
 ```
 
 
-fct_lump
-n = 5 keep the most common 5 values, lump everything else into other category
-
 ```{r}
 diabetic_edited_diag <- diabetic_data %>%
   mutate(diag_1_new = fct_lump(diag_1, n = 5),
@@ -146,7 +143,11 @@ diabetic_edited_diag <- diabetic_data %>%
          admission_type_id = as.factor(admission_type_id),
          admission_source_id = as.factor(admission_source_id),
          discharge_disposition_id = as.factor(discharge_disposition_id),
-         readmitted_30 = ifelse(readmitted == "<30", 1, 0))
+         readmitted_30 = ifelse(readmitted == "<30", 1, 0)) %>%
+  select(-weight, -payer_code, -encounter_id, -patient_nbr, -troglitazone, -tolbutamide, -tolazamide, -rosiglitazone, -repaglinide, -nateglinide, -acetohexamide, -`metformin-pioglitazone`, -citoglipton, -examide, -miglitol, -`metformin-rosiglitazone`,-`glimepiride-pioglitazone`, -`glipizide-metformin`,-chlorpropamide, -acarbose, -diag_1, -diag_2, -diag_3, -readmitted, -medical_specialty) %>%
+  drop_na()
+
+
 ```
 
 
@@ -159,9 +160,6 @@ diabetic_edited <- diabetic_data %>%
   
 ```
 
-```{r}
-
-```
 
 
 #Modeling
@@ -182,54 +180,34 @@ diag_test <-testing(diabetic_split_diag)
 ```{r}
 # Perform logistic regression
 log_reg <- train(
-    readmitted_30 ~ select(-encounter_id, -patient_nbr),
-    data = diabetic_edited_diag,
+    as.factor(readmitted_30) ~ .,
+    data = diag_train,
     method = "glm",
     family = "binomial",
-    trControl = trainControl(method = "cv", number = 5),
+    trControl = trainControl(method = "cv", number = 2),
     metric = "Accuracy",
     na.action = na.omit
 )
 ```
 
-
-argument | meaning
--------- | -------- | -------------
-`y ~ x1 + ... + xp` | model formula
-`data` | training data after splitting into train and test 
-`method` | model fitting method - `glm` implements various generalized linear models, of which logistic regression is one 
-`family` | Using `family = "binomial"` fits logistic regression models (`family = "gaussian"` is equivalent to `method = "lm"`)
-`trControl` | how to split the data using the `trainControl` function. We continue to use `method = "cv"` and `number` is the number of folds
-`metric` | Accuracy will be used to evaluate models
-`na.action` | how to treat missing values, `na.omit` will remove any row with missing values
-
 ## Examining coefficients
 
 ```{r, eval=FALSE}
 #model output
-summary(logistic_model)
+summary(log_reg)
 
 #cv accuracy metrics
-logistic_model$results
-logistic_model$resample #details for each fold
+logistic_reg$results
+logistic_reg$resample #details for each fold
 ```
-
 
 ## Predicting and evaluation
 
 The `newdata` can be either a small dataset you create or it can be a test dataset or something like that. 
 
 ```{r, eval=FALSE}
-# Make PROBABILITY predictions
-predict(logistic_model, newdata = ___, type = "prob")
 
-# Make CLASSIFICATIONS (using a default 0.5 probability threshold). This is the default if you don't include type.
-predict(logistic_model, newdata = ___, type = "raw")
-
-# Confusion matrix (using a default 0.5 probability threshold)
-# Reference is the response variable from the training data
-# In the positive argument, specify the category of interest (eg: "Yes", "1", "pass")
-classifications <- predict(logistic_model, newdata = predict_data, type = "raw")
+classifications <- predict(log_reg, newdata = diag_test, type = "raw")
 confusionMatrix(data = classifications, 
   reference = ___, 
   positive = ___)

@@ -164,5 +164,74 @@ diabetic_edited <- diabetic_data %>%
 ```
 
 
+#Modeling
 
+#Logistic Regression
+
+```{r}
+set.seed(253)
+
+diabetic_split_diag <- diabetic_edited_diag %>% 
+  initial_split(prop = .7, strata = readmitted_30)
+
+diag_train <- training(diabetic_split_diag)
+diag_test <-testing(diabetic_split_diag)
+
+```
+
+```{r}
+# Perform logistic regression
+log_reg <- train(
+    readmitted_30 ~ select(-encounter_id, -patient_nbr),
+    data = diabetic_edited_diag,
+    method = "glm",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+```
+
+
+argument | meaning
+-------- | -------- | -------------
+`y ~ x1 + ... + xp` | model formula
+`data` | training data after splitting into train and test 
+`method` | model fitting method - `glm` implements various generalized linear models, of which logistic regression is one 
+`family` | Using `family = "binomial"` fits logistic regression models (`family = "gaussian"` is equivalent to `method = "lm"`)
+`trControl` | how to split the data using the `trainControl` function. We continue to use `method = "cv"` and `number` is the number of folds
+`metric` | Accuracy will be used to evaluate models
+`na.action` | how to treat missing values, `na.omit` will remove any row with missing values
+
+## Examining coefficients
+
+```{r, eval=FALSE}
+#model output
+summary(logistic_model)
+
+#cv accuracy metrics
+logistic_model$results
+logistic_model$resample #details for each fold
+```
+
+
+## Predicting and evaluation
+
+The `newdata` can be either a small dataset you create or it can be a test dataset or something like that. 
+
+```{r, eval=FALSE}
+# Make PROBABILITY predictions
+predict(logistic_model, newdata = ___, type = "prob")
+
+# Make CLASSIFICATIONS (using a default 0.5 probability threshold). This is the default if you don't include type.
+predict(logistic_model, newdata = ___, type = "raw")
+
+# Confusion matrix (using a default 0.5 probability threshold)
+# Reference is the response variable from the training data
+# In the positive argument, specify the category of interest (eg: "Yes", "1", "pass")
+classifications <- predict(logistic_model, newdata = predict_data, type = "raw")
+confusionMatrix(data = classifications, 
+  reference = ___, 
+  positive = ___)
+```
 

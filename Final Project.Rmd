@@ -158,7 +158,11 @@ diabetic_edited <- diabetic_data %>%
          readmitted_30 = ifelse(readmitted == "<30", 1, 0))
   
 ```
-weight has many missing values, group together admission codes?
+
+```{r}
+
+```
+
 
 
 

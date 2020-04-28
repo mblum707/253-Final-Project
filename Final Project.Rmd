@@ -65,24 +65,6 @@ Links to data and paper:
 http://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008#
 https://www.hindawi.com/journals/bmri/2014/781670/
 
-```{r}
-
-ggplot(diabetic_data) +
- aes(x = readmitted) +
- geom_bar(fill = "#0c4c8a") +
- theme_minimal()
-
-```
-
-```{r}
-diabetic_data %>%
- filter(number_emergency >= 0L & number_emergency <= 19L) %>%
- ggplot() +
- aes(x = insulin) +
- geom_bar(fill = "#0c4c8a") +
- theme_minimal()
-
-```
 Table using count function for medical specialty diag 
 
 ```{r}
@@ -90,6 +72,37 @@ diabetic_data %>% count(medical_specialty) %>% arrange(n)
 
 ```
 
+```{r}
+
+# Perform logistic regression
+med_spec <- train(
+    as.factor(readmitted1) ~ medical_specialty,
+    data = diabetic_data %>%
+        mutate(readmitted1 = (readmitted != "no")),
+    method = "glm",
+    family = "binomial",
+    metric = "Accuracy",
+    na.action = na.omit
+)
+```
+
+```{r}
+summary(med_spec)
+```
+ok to drop
+
+create new variables for particular diagnostic codes
+
+```{r}
+diabetic_data %>% count(diag_1) %>% arrange(desc(n))
+```
+```{r}
+diabetic_data %>% count(diag_2) %>% arrange(desc(n))
+```
+
+```{r}
+diabetic_data %>% count(diag_3) %>% arrange(desc(n))
+```
 
 ```{r, fig.height = 18, fig.width = 10}
 diabetic_data %>% 
@@ -98,20 +111,15 @@ diabetic_data %>%
   pivot_longer(cols = everything(),names_to = "variable", values_to = "value") %>% 
   ggplot(aes(x = value)) +
   geom_bar() +
+    scale_y_log10(breaks = scales::trans_breaks("log10",
+                                               function(x) 10^x),
+                 labels = scales::comma) + 
+  # annotation_logticks(sides = "l") +
     coord_flip()+
-  facet_wrap(ncol = 2, vars(variable), scales = "free")
+    facet_wrap(ncol = 2, vars(variable), scales = "free")
 ```
 
-
-```{r}
-diabetic_data %>% 
-  select(A1Cresult, acarbose, acetohexamide, age, change, chloropropamide) %>% 
-  select_if(is.character) %>% 
-  pivot_longer(cols = everything(),names_to = "variable", values_to = "value") %>% 
-  ggplot(aes(x = value)) +
-  geom_bar() +
-  facet_wrap(vars(variable), scales = "free")
-```
+Variables to exclude: troglitazone, tolbutamide, tolazamide
 
 ```{r}
 diabetic_data %>% 

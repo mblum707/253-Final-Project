@@ -72,7 +72,7 @@ diabetic_data %>% count(medical_specialty) %>% arrange(n)
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 
 # Perform logistic regression
 med_spec <- train(
@@ -86,7 +86,7 @@ med_spec <- train(
 )
 ```
 
-```{r}
+```{r, eval=FALSE}
 summary(med_spec)
 ```
 ok to drop

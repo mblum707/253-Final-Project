@@ -144,7 +144,7 @@ diabetic_edited_diag <- diabetic_data %>%
          admission_source_id = as.factor(admission_source_id),
          discharge_disposition_id = as.factor(discharge_disposition_id),
          readmitted_30 = ifelse(readmitted == "<30", 1, 0)) %>%
-  select(-weight, -payer_code, -encounter_id, -patient_nbr, -troglitazone, -tolbutamide, -tolazamide, -rosiglitazone, -repaglinide, -nateglinide, -acetohexamide, -`metformin-pioglitazone`, -citoglipton, -examide, -miglitol, -`metformin-rosiglitazone`,-`glimepiride-pioglitazone`, -`glipizide-metformin`,-chlorpropamide, -acarbose, -diag_1, -diag_2, -diag_3, -readmitted, -medical_specialty) %>%
+  select(-weight, -payer_code, -encounter_id, -patient_nbr, -troglitazone, -tolbutamide, -tolazamide, -rosiglitazone, -repaglinide, -nateglinide, -acetohexamide, -`metformin-pioglitazone`, -citoglipton, -examide, -miglitol, -`metformin-rosiglitazone`,-`glimepiride-pioglitazone`, -`glipizide-metformin`,-chlorpropamide, -acarbose, -diag_1, -diag_2, -diag_3, -readmitted, -medical_specialty, -`glyburide-metformin`) %>%
   drop_na()
 
 
@@ -161,7 +161,6 @@ diabetic_edited <- diabetic_data %>%
 ```
 
 
-
 #Modeling
 
 #Logistic Regression
@@ -170,7 +169,7 @@ diabetic_edited <- diabetic_data %>%
 set.seed(253)
 
 diabetic_split_diag <- diabetic_edited_diag %>% 
-  initial_split(prop = .7, strata = readmitted_30)
+  initial_split(prop = .5, strata = readmitted_30)
 
 diag_train <- training(diabetic_split_diag)
 diag_test <-testing(diabetic_split_diag)
@@ -184,7 +183,7 @@ log_reg <- train(
     data = diag_train,
     method = "glm",
     family = "binomial",
-    trControl = trainControl(method = "cv", number = 2),
+    trControl = trainControl(method = "cv", number = 5),
     metric = "Accuracy",
     na.action = na.omit
 )
@@ -192,13 +191,10 @@ log_reg <- train(
 
 ## Examining coefficients
 
-```{r, eval=FALSE}
-#model output
+```{r}
 summary(log_reg)
-
-#cv accuracy metrics
-logistic_reg$results
-logistic_reg$resample #details for each fold
+log_reg$results
+# log_reg$resample #details for each fold
 ```
 
 ## Predicting and evaluation
@@ -206,10 +202,8 @@ logistic_reg$resample #details for each fold
 The `newdata` can be either a small dataset you create or it can be a test dataset or something like that. 
 
 ```{r, eval=FALSE}
-
 classifications <- predict(log_reg, newdata = diag_test, type = "raw")
 confusionMatrix(data = classifications, 
-  reference = ___, 
-  positive = ___)
+  reference = as.factor(diag_test$readmitted_30), 
+  positive = "1")
 ```
-

@@ -1,0 +1,49 @@
+---
+title: "Modeling Hospital Readmission of Diabetic Patients"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Final Report
+This will highlight some of the new statistical machine learning techniques you learned in this course and also o show that you can communicate the results to a non-statistician. It should read more like a data journalism article than a formal research paper. Here is one good example. You could also look to fivethirtyeight or The Pudding (my personal favorite) for more good examples.
+
+You should make sure to include the following:
+
+Introduce your data and research question. It might be helpful to include a graph/table that summarizes the response variable. Lay out the plan you will use to analyze/model so we (the readers!) can more easily follow along and knows what to expect. It can be helpful to elude to some of the results at the beginning so we know what to watch for. Also mention any important data cleaning decisions you made. You don’t need to tell us EVERYTHING you do, though.
+
+Exploratory work and basic models. Use graphs to illustrate interesting relationshipos that play a role in your final model. DO NOT just show a bunch of graphs because you can. You should label and discuss every graph you include. There is no required number to include. The graphs should be helping us to understand something about your final model and should help us engage more with the data.
+
+Describe the modeling process. I don’t want to know EVERYTHING you tried. You might have tried 10 different things and in the end chose the 8th one. If you think it is important, you can summarize some other methods you tried. But focus on the analysis you found to be most important. This should include at least one of the techniques you learned in this course. Some essentials you will need in the modeling process:
+
+Use rsample() to split the data into a training and test set.
+Tune the model using the training data.
+Evaluate model using training data (cross-validation or OOB).
+Pick a few “best” models and apply them to the test data to decide on the final model.
+Summarize the results succinctly. Reiterate why we should be interested in this analysis. Depending on the project, you might do this in different ways. Maybe there were important relationships you learned about. Or maybe you have a nice way to predict something useful. Let us know what we’ve learned and why it’s important/neat/interesting.
+
+Requirements and tips
+Your final product will be a knitted html file. The yaml header (at the very top of the .rmd file between the two sets of three dashes) should be similar to the one I have below. You will also submit the .rmd in a separate place. I will likely not look at that file unless there is something I do not understand.
+title: "Title"
+output:
+  html_document:
+    df_print: paged
+Only include absolutely essential R code! I want to be able to read through the paper nicely. So, most of your R code chunks should have the echo=FALSE option (or do it for all code chunks using my suggestion in the next bullet). The code will still run, but the code is omitted from the document. What is essential? Probably only the code you use to fit models. Anything code for graphs and evaluation can be omitted. Even some of your modeling code might be able to be omitted. When you include code, that means you find it so essential that you should talk about it.
+
+Use other useful code chunk options. You can add results='hide' to also omit the output. This is good for chunks of code you might want to hang on to in case you decide to use it later but don’t want to use in the paper. message=FALSE and warning=FALSE omit any messages and warnings. This link provides some other basic code chunk options. If you want to apply some of these to your entire document, add a chunk similar to the one below. The options you put in there will be applied to all code chunks.
+
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
+Make your R output look nice.
+
+Label graphs (with nice axis labels too) and tables
+The kable() function is good to use for tables.
+You can change figure widths and heights in code chunk options using fig.width and fig.height.
+Always leave an empty row (push enter twice) after an R code chunk. It should prevent your text from showing up next to a graph or table in an odd way.
+Be careful if you make any bulleted/numbered lists. Make sure they look the way you expect when knitted. Leaving an empty row between bullets/numbers often helps.
+Interpret the R output! You should be describing what it is and what parts of it are interesting.
+
+There is no length requirement. I recommend making it as short as possible while still accomplishing all the required tasks. See the grading rubric on the moodle page (coming soon).

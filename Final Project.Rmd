@@ -590,6 +590,431 @@ diag_train %>%
 
 #Model Evaluation on Testing Data
 
+## Logistic Regression testing (the little arrow things minimize the code-- use alt+l to make them)
 
 
+### without downsampling
+```{r}
+# without downsampling
+log_reg_test <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_test,
+    method = "glm",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+```
 
+### with downsampling
+```{r}
+# with downsampling
+log_reg_sample_test <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_test,
+    method = "glm",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5, sampling = "down"),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+```
+
+
+## Lasso testing
+
+
+### without downsampling
+```{r}
+#without downsampling
+set.seed(253)
+
+lambda_grid <- 10^seq(-4, -2, length = 100)
+
+log_lasso_test <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_test,
+    method = "glmnet",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5),
+    tuneGrid = data.frame(alpha = 1, 
+                          lambda = lambda_grid),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+
+```
+
+### with downsampling
+```{r}
+# with downsampling
+set.seed(253)
+
+lambda_grid <- 10^seq(-4, -1, length = 300)
+
+log_lasso_sample_test <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_test,
+    method = "glmnet",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5, sampling = "down"),
+    tuneGrid = data.frame(alpha = 1, 
+                          lambda = lambda_grid),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+
+```
+
+
+##Classification Tree testing
+
+
+### without downsampling
+```{r}
+# without downsampling
+set.seed(253)
+
+cp_grid <- 10^seq(-6, -2, length = 100)
+
+class_tree_test <- train(
+  as.factor(readmitted_30)~.,
+  data = diag_test,
+  method = "rpart",
+  tuneGrid = data.frame(cp = cp_grid),
+  trControl = trainControl(method = "cv", number = 5),
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+### with downsampling
+```{r}
+#with downsampling
+set.seed(253)
+
+cp_grid <- 10^seq(-4, -2, length = 100)
+
+class_tree_sample_test <- train(
+  as.factor(readmitted_30)~.,
+  data = diag_test,
+  method = "rpart",
+  tuneGrid = data.frame(cp = cp_grid),
+  trControl = trainControl(method = "cv", number = 5, sampling = "down"),
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+
+##Random Forest testing
+
+
+### without downsampling
+```{r}
+#without downsampling
+set.seed(253)
+
+# mtry_grid <- seq(2, __, length = __)
+
+rand_for_test <- train(
+  as.factor(readmitted_30) ~ .,
+  data = diag_test, 
+  method = "rf",
+  trControl = trainControl(method = "oob"),
+  tuneGrid = data.frame(mtry = c(2)),
+  ntree = 100, 
+  importance = TRUE,
+  nodesize = 5, 
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+### with downsampling
+```{r}
+#with downsampling
+set.seed(253)
+
+# mtry_grid <- seq(2, __, length = __)
+
+rand_for_sample_test <- train(
+  as.factor(readmitted_30) ~ .,
+  data = diag_test, 
+  method = "rf",
+  trControl = trainControl(method = "oob", sampling = "down"),
+  tuneGrid = data.frame(mtry = c(2)),
+  ntree = 100, 
+  importance = TRUE,
+  nodesize = 5, 
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+
+###Not Downsampled
+
+##Logistic Regression
+
+```{r}
+summary(log_reg_test)
+log_reg_test$results
+```
+
+```{r}
+probsTest <- predict(log_reg_tets, diag_test, type = "prob")
+threshold <- 0.2
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_reg_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_reg_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Lasso Logistic
+
+```{r}
+log_lasso_test$bestTune
+log_lasso_test$results
+```
+
+```{r}
+coef(log_lasso_test$finalModel, 0.003274549)
+```
+
+```{r}
+probsTest <- predict(log_lasso_test, diag_test, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_lasso_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_lasso_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Classification Tree
+
+```{r}
+class_tree_test$bestTune
+class_tree_test$results
+```
+
+```{r}
+# I can't remember if you need to change anything for testing here
+vip(class_tree_test$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+rpart.plot(class_tree_test$finalModel)
+```
+
+```{r}
+classifications <- predict(class_tree_test, newdata = diag_test, type = "raw")
+confusionMatrix(data = classifications, 
+  reference = as.factor(diag_test$readmitted_30), 
+  positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(class_tree_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(class_tree_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Random Forest
+
+```{r}
+rand_for_test$bestTune
+rand_for_test$results
+```
+
+```{r}
+#not sure if I need to change anything for testing here
+vip(rand_for_test$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+probsTest <- predict(rand_for, diag_test, type = "prob")
+threshold <- 0.01
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(rand_for_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(rand_for_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+###Downsampled
+
+##Logistic Regression
+
+```{r}
+summary(log_reg_sample_test)
+log_reg_sample_test$results
+```
+
+```{r}
+probsTest <- predict(log_reg_sample_test, diag_test, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_reg_sample_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_reg_sample_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Lasso Logistic
+
+```{r}
+log_lasso_sample_test$bestTune
+log_lasso_sample_test$results
+```
+
+```{r}
+coef(log_lasso_sample_test$finalModel, 0.02806471	)
+```
+
+```{r}
+probsTest <- predict(log_lasso_sample_test, diag_test, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_lasso_sample_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_lasso_sample_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Classification Tree
+
+```{r}
+class_tree_sample_test$bestTune
+class_tree_sample_test$results
+```
+
+```{r}
+vip(class_tree_sample_test$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+rpart.plot(class_tree_sample_test$finalModel)
+```
+
+```{r}
+probsTest <- predict(class_tree_sample_test, diag_test, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(class_tree_sample_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(class_tree_sample_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Random Forest
+
+```{r}
+rand_for_sample_test$bestTune
+rand_for_sample_test$results
+```
+
+```{r}
+vip(rand_for_sample_test$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+probsTest <- predict(rand_for_sample_test, diag_test, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead = predict(rand_for_sample_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+```
+
+```{r}
+diag_test %>%
+  mutate(PredRead =  predict(rand_for_sample_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```

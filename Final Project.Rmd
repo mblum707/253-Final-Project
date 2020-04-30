@@ -174,6 +174,14 @@ diag_test <-testing(diabetic_split_diag)
 
 ```
 
+
+```{r}
+
+```
+
+
+
+
 ##Logistic Regression
 
 ```{r}
@@ -184,6 +192,20 @@ log_reg <- train(
     method = "glm",
     family = "binomial",
     trControl = trainControl(method = "cv", number = 5),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+```
+
+
+```{r}
+# Perform logistic regression
+log_reg_sample <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_train,
+    method = "glm",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5, sampling = "down"),
     metric = "Accuracy",
     na.action = na.omit
 )
@@ -272,8 +294,60 @@ rand_for <- train(
 ##Logistic Regression
 
 ```{r}
+log_reg_sample$results
+log_reg_sample$resample
+```
+
+
+```{r}
 summary(log_reg)
 log_reg$results
+```
+
+```{r}
+tpr <- c()
+fpr <- c()
+cutoffs <- seq(.02,.98,.02)
+
+for (i in 1:length(cutoffs)){
+  tpr[i] <- true_pos_rate(cutoff = cutoffs[i], 
+    actual_class = preds$RainTomorrow, 
+    pred_prob = preds$pred_prob, 
+    positive = "Yes")
+  fpr[i] <- false_pos_rate(cutoff = cutoffs[i], 
+    actual_class = preds$RainTomorrow, 
+    pred_prob = preds$pred_prob, 
+    positive = "Yes")
+}
+
+eval_stats <- tibble(cutoffs, tpr, fpr)
+
+eval_stats
+```
+
+
+```{r}
+probsTest <- predict(log_reg_sample, diag_train, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(log_reg_sample, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+```
+
+```{r}
+probsTest <- predict(log_reg, diag_train, type = "prob")
+threshold <- 0.2
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
 ```
 
 ```{r}
@@ -282,6 +356,12 @@ confusionMatrix(data = classifications,
   reference = as.factor(diag_train$readmitted_30), 
   positive = "1")
 ```
+
+NIR
+```{r}
+43412/(43412+5401)
+```
+
 
 ```{r}
 diag_train %>% 
@@ -306,6 +386,14 @@ log_lasso$results
 
 ```{r}
 coef(log_lasso$finalModel, 0.00129155)
+```
+
+
+```{r}
+probsTest <- predict(log_lasso, diag_train, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
 ```
 
 ```{r}
@@ -384,6 +472,13 @@ confusionMatrix(data = classifications,
 ```
 
 ```{r}
+probsTest <- predict(rand_for, diag_train, type = "prob")
+threshold <- 0.01
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
 diag_train %>% 
   mutate(PredRead =  predict(rand_for, type = "prob")$"1") %>%
   ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
@@ -426,4 +521,41 @@ diag_train %>%
 ```
 
 #Model Evaluation on Testing Data
+
+##Random Forest
+
+```{r}
+fourStats <- function (diag_train, lev = levels(diag_train$readmitted_30), model = log_reg) {
+  ## This code will get use the area under the ROC curve and the
+  ## sensitivity and specificity values using the current candidate
+  ## value of the probability threshold.
+  out <- c(twoClassSummary(data, lev = levels(diag_train$readmitted_30), model = log_reg))
+ 
+  ## The best possible model has sensitivity of 1 and specifity of 1. 
+  ## How far are we from that value?
+  coords <- matrix(c(1, 1, out["Spec"], out["Sens"]), 
+                   ncol = 2, 
+                   byrow = TRUE)
+  colnames(coords) <- c("Spec", "Sens")
+  rownames(coords) <- c("Best", "Current")
+  c(out, Dist = dist(coords)[1])
+}
+```
+
+```{r}
+set.seed(949)
+mod1 <- train(readmitted_30 ~ ., data = diag_train,
+              ## 'modelInfo' is a list object found in the linked
+              ## source code
+              method = modelInfo,
+              ## Minimize the distance to the perfect model
+              metric = "Dist",
+              maximize = FALSE,
+              tuneLength = 20,
+              trControl = trainControl(method = "cv",
+                                       classProbs = TRUE,
+                                       summaryFunction = fourStats))
+
+ggplot(mod1)
+```
 

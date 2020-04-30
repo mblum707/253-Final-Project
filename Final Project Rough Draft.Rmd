@@ -6,8 +6,67 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
 ```
+
+
+Introduction
+
+- Why do we want to model hospital readmission for diabetes patients? What could be done differently for patients more likely to be readmitted?
+
+Exploratory Plots
+
+- What kind of variables does our dataset have
+
+Data Cleaning
+
+We made several data cleaning decisions to facilitate the modeling process. For the variables describing patient diagnosis codes, we decided to preserve only the five most populated levels of each variable and lump all other diagnosis codes into an "other" category. This allowed us to examine the influence of the most common patient diagnoses on readmission rates without having to manage a large number of levels, some of which were sparsely populated. We also removed from the dataset several variables with values largely unique to each observation (encounter_id and patient_nbr), several variables with an unmanageable number of levels (medical specialty and payer code), and one variable for which most of the values were missing (weight). 
+
+This left us with variables describing patient demographics, test results, medications, and other aspects of the patient's stay in the hospital. From this pool of variables, we eliminated many of the variables describing whether or not a patient took a specific medication or changed their dose of a specific medication because the vast majority of the observations fell into one level of the variable. After eliminating these variables, we dropped all remaining observations with missing values for any variable, and were left with 98053 observations. In order to use the remaining variables to predict hospital readmission, we condensed two levels of the readmitted variable (>30 and NO) into a single level. This allowed us to use logistic regression and other related models to predict the probability that each patient would be readmitted to the hospital within 30 days. 
+
+```{r, echo = FALSE }
+diabetic_edited_diag <- diabetic_data %>%
+  mutate(diag_1_new = fct_lump(diag_1, n = 5),
+         diag_2_new = fct_lump(diag_2, n = 5),
+         diag_3_new = fct_lump(diag_3, n = 5),
+         admission_type_id = as.factor(admission_type_id),
+         admission_source_id = as.factor(admission_source_id),
+         discharge_disposition_id = as.factor(discharge_disposition_id),
+         readmitted_30 = ifelse(readmitted == "<30", 1, 0)) %>%
+  select(-weight, -payer_code, -encounter_id, -patient_nbr, -troglitazone, -tolbutamide, -tolazamide, -rosiglitazone, -repaglinide, -nateglinide, -acetohexamide, -`metformin-pioglitazone`, -citoglipton, -examide, -miglitol, -`metformin-rosiglitazone`,-`glimepiride-pioglitazone`, -`glipizide-metformin`,-chlorpropamide, -acarbose, -diag_1, -diag_2, -diag_3, -readmitted, -medical_specialty, -`glyburide-metformin`) %>%
+  drop_na()
+```
+
+Modeling
+
+We split the dataset into two evenly sized training and testing datasets in order to validate model performance on a different dataset than the one used to fit each model. Because the proportion of observations within the dataset for which the patient was readmitted within 30 days is relatively small, we stratified the testing and training datasets by readmission to ensure an even distribution of these positive observations between the two datasets.
+
+We then fit a series of models to the training data and used cross validation (k = 5) or out of bag observations to optimize tuning parameters and evaluate which types of models might produce the most accurate predictions of readmission within 30 days. The types of models we applied include logistic regression, LASSO logistic regression, classification trees, and random forest. In evaluating the performance of these models, we noticed that they all had fairly low sensitivity at a probability threshold of 0.5, owing to the small proportion of observations that were positives. We explored two strategies for circumventing this problem: (1) adjusting the probability thresholds of the models to increase the sensitivity (usually at the expense of both specificity and accuracy) and (2) downsampling the folds created during cross validation to fit the model on data with a more even distribution of positives and negatives.
+
+Model Evaluation on Training Data
+
+Model Evaluation on Testing Data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lisa's instructions:
 
 Final Report
 This will highlight some of the new statistical machine learning techniques you learned in this course and also o show that you can communicate the results to a non-statistician. It should read more like a data journalism article than a formal research paper. Here is one good example. You could also look to fivethirtyeight or The Pudding (my personal favorite) for more good examples.

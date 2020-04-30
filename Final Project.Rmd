@@ -175,13 +175,6 @@ diag_test <-testing(diabetic_split_diag)
 ```
 
 
-```{r}
-
-```
-
-
-
-
 ##Logistic Regression
 
 ```{r}

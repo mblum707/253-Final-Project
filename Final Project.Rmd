@@ -197,7 +197,6 @@ log_reg <- train(
 )
 ```
 
-
 ```{r}
 # Perform logistic regression
 log_reg_sample <- train(
@@ -232,12 +231,31 @@ log_lasso <- train(
 
 ```
 
+```{r}
+set.seed(253)
+
+lambda_grid <- 10^seq(-4, -1, length = 300)
+
+log_lasso_sample <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_train,
+    method = "glmnet",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5, sampling = "down"),
+    tuneGrid = data.frame(alpha = 1, 
+                          lambda = lambda_grid),
+    metric = "Accuracy",
+    na.action = na.omit
+)
+
+```
+
 ##Classification Tree
 
 ```{r}
 set.seed(253)
 
-cp_grid <- 10^seq(-4, -2, length = 100)
+cp_grid <- 10^seq(-6, -2, length = 100)
 
 class_tree <- train(
   as.factor(readmitted_30)~.,
@@ -245,6 +263,22 @@ class_tree <- train(
   method = "rpart",
   tuneGrid = data.frame(cp = cp_grid),
   trControl = trainControl(method = "cv", number = 5),
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+```{r}
+set.seed(253)
+
+cp_grid <- 10^seq(-4, -2, length = 100)
+
+class_tree_sample <- train(
+  as.factor(readmitted_30)~.,
+  data = diag_train,
+  method = "rpart",
+  tuneGrid = data.frame(cp = cp_grid),
+  trControl = trainControl(method = "cv", number = 5, sampling = "down"),
   metric = "Accuracy",
   na.action = na.omit
 )
@@ -271,76 +305,40 @@ rand_for <- train(
 )
 ```
 
-##KNN
-
 ```{r}
-# set.seed(253)
-# 
-# k_grid = c(1,5,25,125,625)
-# 
-# knn <- train(
-#   as.factor(readmitted_30) ~ .,
-#   data = diag_train,
-#   method = "knn",
-#   tuneGrid = data.frame(k = k_grid),
-#   trControl = trainControl(method = "cv", number = 5),
-#   metric = "Accuracy",
-#   na.action = na.omit
-# )
+set.seed(253)
+
+# mtry_grid <- seq(2, __, length = __)
+
+rand_for_sample <- train(
+  as.factor(readmitted_30) ~ .,
+  data = diag_train, 
+  method = "rf",
+  trControl = trainControl(method = "oob", sampling = "down"),
+  tuneGrid = data.frame(mtry = c(2)),
+  ntree = 100, 
+  importance = TRUE,
+  nodesize = 5, 
+  metric = "Accuracy",
+  na.action = na.omit
+)
 ```
 
 #Model Evaluation on Training Data
 
-##Logistic Regression
-
+No information rate = 88.935%
 ```{r}
-log_reg_sample$results
-log_reg_sample$resample
+43412/(43412+5401)
 ```
 
+
+###Not Downsampled
+
+##Logistic Regression
 
 ```{r}
 summary(log_reg)
 log_reg$results
-```
-
-```{r}
-tpr <- c()
-fpr <- c()
-cutoffs <- seq(.02,.98,.02)
-
-for (i in 1:length(cutoffs)){
-  tpr[i] <- true_pos_rate(cutoff = cutoffs[i], 
-    actual_class = preds$RainTomorrow, 
-    pred_prob = preds$pred_prob, 
-    positive = "Yes")
-  fpr[i] <- false_pos_rate(cutoff = cutoffs[i], 
-    actual_class = preds$RainTomorrow, 
-    pred_prob = preds$pred_prob, 
-    positive = "Yes")
-}
-
-eval_stats <- tibble(cutoffs, tpr, fpr)
-
-eval_stats
-```
-
-
-```{r}
-probsTest <- predict(log_reg_sample, diag_train, type = "prob")
-threshold <- 0.5
-pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
-confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
-
-```
-
-```{r}
-diag_train %>% 
-  mutate(PredRead =  predict(log_reg_sample, type = "prob")$"1") %>%
-  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
-  geom_roc(labelround = 2, size = 1,
-           linealpha = .5, pointalpha = .8) +
-  geom_abline(slope = 1, intercept = 0, color = "gray")
 ```
 
 ```{r}
@@ -349,19 +347,6 @@ threshold <- 0.2
 pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
 confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
 ```
-
-```{r}
-classifications <- predict(log_reg, newdata = diag_train, type = "raw")
-confusionMatrix(data = classifications, 
-  reference = as.factor(diag_train$readmitted_30), 
-  positive = "1")
-```
-
-NIR
-```{r}
-43412/(43412+5401)
-```
-
 
 ```{r}
 diag_train %>% 
@@ -388,19 +373,11 @@ log_lasso$results
 coef(log_lasso$finalModel, 0.00129155)
 ```
 
-
 ```{r}
 probsTest <- predict(log_lasso, diag_train, type = "prob")
 threshold <- 0.1
 pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
 confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
-```
-
-```{r}
-classifications <- predict(log_lasso, newdata = diag_train, type = "raw")
-confusionMatrix(data = classifications, 
-  reference = as.factor(diag_train$readmitted_30), 
-  positive = "1")
 ```
 
 ```{r}
@@ -465,13 +442,6 @@ vip(rand_for$finalModel, num_features = 16, bar = FALSE)
 ```
 
 ```{r}
-classifications <- predict(rand_for, newdata = diag_train, type = "raw")
-confusionMatrix(data = classifications, 
-  reference = as.factor(diag_train$readmitted_30), 
-  positive = "1")
-```
-
-```{r}
 probsTest <- predict(rand_for, diag_train, type = "prob")
 threshold <- 0.01
 pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
@@ -492,70 +462,141 @@ diag_train %>%
   auc()
 ```
 
-##KNN
+###Downsampled
+
+##Logistic Regression
 
 ```{r}
-# knn$bestTune
-# knn$results
-# ```
-# 
-# ```{r}
-# classifications <- predict(knn, newdata = diag_train, type = "raw")
-# confusionMatrix(data = classifications, 
-#   reference = as.factor(diag_train$readmitted_30), 
-#   positive = "1")
-# ```
-# 
-# ```{r}
-# diag_train %>% 
-#   mutate(PredRead =  predict(knn, type = "prob")$"1") %>%
-#   ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
-#   geom_roc(labelround = 2, size = 1,
-#            linealpha = .5, pointalpha = .8) +
-#   geom_abline(slope = 1, intercept = 0, color = "gray")
-# 
-# diag_train %>%
-#   mutate(PredRead =  predict(knn, type = "prob")$"1") %>%
-#   roc(readmitted_30 ~ PredRead, data=.) %>%
-#   auc()
+summary(log_reg_sample)
+log_reg_sample$results
 ```
 
-#Model Evaluation on Testing Data
+```{r}
+probsTest <- predict(log_reg_sample, diag_train, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(log_reg_sample, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(log_reg_sample, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Lasso Logistic
+
+```{r}
+log_lasso_sample$bestTune
+log_lasso_sample$results
+```
+
+```{r}
+coef(log_lasso_sample$finalModel, 0.1)
+```
+
+```{r}
+probsTest <- predict(log_lasso_sample, diag_train, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(log_lasso_sample, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(log_lasso_sample, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Classification Tree
+
+```{r}
+class_tree_sample$bestTune
+class_tree_sample$results
+```
+
+```{r}
+vip(class_tree_sample$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+rpart.plot(class_tree_sample$finalModel)
+```
+
+```{r}
+probsTest <- predict(class_tree_sample, diag_train, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(class_tree_sample, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(class_tree_sample, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
 
 ##Random Forest
 
 ```{r}
-fourStats <- function (diag_train, lev = levels(diag_train$readmitted_30), model = log_reg) {
-  ## This code will get use the area under the ROC curve and the
-  ## sensitivity and specificity values using the current candidate
-  ## value of the probability threshold.
-  out <- c(twoClassSummary(data, lev = levels(diag_train$readmitted_30), model = log_reg))
- 
-  ## The best possible model has sensitivity of 1 and specifity of 1. 
-  ## How far are we from that value?
-  coords <- matrix(c(1, 1, out["Spec"], out["Sens"]), 
-                   ncol = 2, 
-                   byrow = TRUE)
-  colnames(coords) <- c("Spec", "Sens")
-  rownames(coords) <- c("Best", "Current")
-  c(out, Dist = dist(coords)[1])
-}
+rand_for_sample$bestTune
+rand_for_sample$results
 ```
 
 ```{r}
-set.seed(949)
-mod1 <- train(readmitted_30 ~ ., data = diag_train,
-              ## 'modelInfo' is a list object found in the linked
-              ## source code
-              method = modelInfo,
-              ## Minimize the distance to the perfect model
-              metric = "Dist",
-              maximize = FALSE,
-              tuneLength = 20,
-              trControl = trainControl(method = "cv",
-                                       classProbs = TRUE,
-                                       summaryFunction = fourStats))
-
-ggplot(mod1)
+vip(rand_for_sample$finalModel, num_features = 16, bar = FALSE)
 ```
+
+```{r}
+probsTest <- predict(rand_for_sample, diag_train, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead = predict(rand_for_sample, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+```
+
+```{r}
+diag_train %>%
+  mutate(PredRead =  predict(rand_for_sample, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+#Model Evaluation on Testing Data
+
+
+
 

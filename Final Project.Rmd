@@ -99,6 +99,7 @@ create new variables for particular diagnostic codes
 ```{r}
 diabetic_data %>% count(diag_1) %>% arrange(desc(n))
 ```
+
 ```{r}
 diabetic_data %>% count(diag_2) %>% arrange(desc(n))
 ```
@@ -282,14 +283,14 @@ class_tree_sample <- train(
 ```{r}
 set.seed(253)
 
-# mtry_grid <- seq(2, __, length = __)
+mtry_grid <- seq(2, 10, length = 10)
 
 rand_for <- train(
   as.factor(readmitted_30) ~ .,
   data = diag_train, 
   method = "rf",
   trControl = trainControl(method = "oob"),
-  tuneGrid = data.frame(mtry = c(2)),
+  tuneGrid = data.frame(mtry = mtry_grid),
   ntree = 100, 
   importance = TRUE,
   nodesize = 5, 
@@ -574,16 +575,14 @@ confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
 
 ```{r}
 diag_train %>% 
-  mutate(PredRead = predict(rand_for_sample, type = "prob")$"1") %>%
+  mutate(PredRead = predict(rand_for_sample, newdata = diag_train, type = "prob")$"1") %>%
   ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
   geom_roc(labelround = 2, size = 1,
            linealpha = .5, pointalpha = .8) +
   geom_abline(slope = 1, intercept = 0, color = "gray")
-```
 
-```{r}
 diag_train %>%
-  mutate(PredRead =  predict(rand_for_sample, type = "prob")$"1") %>%
+  mutate(PredRead =  predict(rand_for_sample, newdata = diag_train, type = "prob")$"1") %>%
   roc(readmitted_30 ~ PredRead, data=.) %>%
   auc()
 ```
@@ -1015,6 +1014,205 @@ diag_test %>%
 ```{r}
 diag_test %>%
   mutate(PredRead =  predict(rand_for_sample_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+I'm not totally sure I'm remembering this right, but I think we're supposed to test the model that was fit on the training data using the testing data, instead of fitting the same type of model to the testing data and then testing it on the testing data. With the first option, we can detect overfitting and see how the model would perform on a "new" dataset, whereas the second option does sort of the same thing we did when we trained the models and then tested their accuracy on training data. I have edited your code below to do the first option, but I'm leaving everything you did in case I'm wrong about how to do this. 
+
+#Model Evaluation (of model built on Training Data) on Testing Data
+
+###Not Downsampled
+
+##Logistic Regression
+
+```{r}
+probsTest <- predict(log_reg, diag_test, type = "prob")
+threshold <- 0.2
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_reg, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+```
+
+
+```{r}
+diag_test %>%
+  mutate(PredRead =  predict(log_reg, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Lasso Logistic 
+
+```{r}
+probsTest <- predict(log_lasso, diag_test, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_lasso, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_lasso, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Classification Tree 
+
+```{r}
+classifications <- predict(class_tree, newdata = diag_test, type = "raw")
+confusionMatrix(data = classifications, 
+  reference = as.factor(diag_test$readmitted_30), 
+  positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(class_tree, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(class_tree, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Random Forest
+
+```{r}
+probsTest <- predict(rand_for, diag_test, type = "prob")
+threshold <- 0.01
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(rand_for, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(rand_for, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+
+###Downsampled
+
+##Logistic Regression 
+
+```{r}
+probsTest <- predict(log_reg_sample, diag_test, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_reg_sample, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_reg_sample, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Lasso Logistic 
+
+```{r}
+probsTest <- predict(log_lasso_sample, diag_test, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(log_lasso_sample, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(log_lasso_sample, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Classification Tree 
+
+```{r}
+probsTest <- predict(class_tree_sample, diag_test, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead =  predict(class_tree_sample, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_test %>%
+  mutate(PredRead =  predict(class_tree_sample, newdata = diag_test, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Random Forest
+
+```{r}
+probsTest <- predict(rand_for_sample, diag_test, type = "prob")
+threshold <- 0.5
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_test %>% 
+  mutate(PredRead = predict(rand_for_sample, newdata = diag_test, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+```
+
+```{r}
+diag_test %>%
+  mutate(PredRead =  predict(rand_for_sample, newdata = diag_test, type = "prob")$"1") %>%
   roc(readmitted_30 ~ PredRead, data=.) %>%
   auc()
 ```

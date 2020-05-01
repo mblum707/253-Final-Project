@@ -12,17 +12,37 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
 
 Introduction
 
-- Why do we want to model hospital readmission for diabetes patients? What could be done differently for patients more likely to be readmitted?
+Diabetes is a chronic disease which affects an alarmingly high proportion of the U.S. population. In 2018, 34.2 million people of all ages in the U.S. (or 10.5% of the population) had received a diabetes diagnosis, and an additional 7.3 million adults were estimated to have undiagnosed diabetes (1). Patients with diabetes experience high blood sugar, which can lead to diabetic emergencies like ketoacidosis if left untreated. Diabetes patients who use insulin to manage their blood sugar levels can also require emergency medical care if a dose of insulin lowers their blood sugar too far. In either of these cases, patients may need to be admitted to a hospital and monitored for several days or weeks before they can return to daily life. 
+
+Patients who repeatedly require hospital admission are exposed to the risks of extended hospital stays, such as blood clots from lying in bed and contact with infectious diseases. Because hospital visits pose risks to patients and are generally more costly to patients than preventative care (regular blood glucose monitoring, modifications to diet and exercise, diabetic medications), modeling that can accurately inform physicians about which patients are most likely to be readmitted to the hospital is valuable. Patients who are more likely to be readmitted can be provided with additional hospital resources upon discharge, such as a health care worker who vists their home once a week to check on their general health, medication compliance, and blood glucose levels. If these resources are directed effectively, it may be possible to prevent hospital readmission for the most at-risk patients by improving their ability to manage their disease. 
+
+Using a dataset that describes 100,000 hospital admissions of diabetic patients in the U.S., we attempt to build several models predicting which patients are most likely to be readmitted to the hospital within 30 days of an initial hospital stay (2). A previous study using the same dataset found that the probability of readmission was significantly influenced by whether or not a laboratory test called HbA1C was administered, and whether the patient's medications were changed if the test result was abnormal (3). If this test, which gives health care providers a sense of how high the patient's blood sugar has been over the last few months, was administered, the patient was less likely to be readmitted, and this effect was even stronger if the patient's medications were changed during the hospital stay after an abnormal HbA1C result. The authors of this study argue for increased use of the HbA1C test for diabetic patients during hospital admissions, but they fail to provide a measure of how accurate their model predicting patient readmission is. 
+
+Here, we explore the ability of several different modeling techniques to predict patient readmission, and we compare measures of modeling accuracy to determine which model(s) could most effectively inform the targeted distribution of hospital resources to at-risk patients. SHORT DESCRIPTION OF RESULTS. 
+
+
+
+
+
+(1) https://www.cdc.gov/diabetes/pdfs/data/statistics/national-diabetes-statistics-report.pdf
+(2) http://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008
+(3) https://www.hindawi.com/journals/bmri/2014/781670/
 
 Exploratory Plots
 
-- What kind of variables does our dataset have
 
-Data Cleaning
 
-We made several data cleaning decisions to facilitate the modeling process. For the variables describing patient diagnosis codes, we decided to preserve only the five most populated levels of each variable and lump all other diagnosis codes into an "other" category. This allowed us to examine the influence of the most common patient diagnoses on readmission rates without having to manage a large number of levels, some of which were sparsely populated. We also removed from the dataset several variables with values largely unique to each observation (encounter_id and patient_nbr), several variables with an unmanageable number of levels (medical specialty and payer code), and one variable for which most of the values were missing (weight). 
 
-This left us with variables describing patient demographics, test results, medications, and other aspects of the patient's stay in the hospital. From this pool of variables, we eliminated many of the variables describing whether or not a patient took a specific medication or changed their dose of a specific medication because the vast majority of the observations fell into one level of the variable. After eliminating these variables, we dropped all remaining observations with missing values for any variable, and were left with 98053 observations. In order to use the remaining variables to predict hospital readmission, we condensed two levels of the readmitted variable (>30 and NO) into a single level. This allowed us to use logistic regression and other related models to predict the probability that each patient would be readmitted to the hospital within 30 days. 
+
+Data Cleaning (we can definitely get rid of some of this)
+
+The dataset that we use to model hospital readmission for diabetes patients contains information on 100,000 patient visits to 130 hospitals in the United States between 1999 and 2008. During each of these visits, a diabetic patient was admitted to the hospital for 1 to 14 days, received laboratory tests, and was administered medication. For each visit, the dataset also provides information on patient demographics, aspects of the patient's stay in the hospital (tests performed and medications administered, length of stay, specialty of the physician who admitted the patient), and the patent's medical history (diagnoses, number of visits to other several types of medical providers during the year before hospitalization). Using these variables, we sought to model the likelihood that patients would be readmitted to the hospital within 30 days of the recorded admission.
+
+We made several data cleaning decisions to facilitate the modeling process. For the variables describing patient diagnoses, we decided to consider the impact of only the five most common diagnoses on readmission. We also removed from the dataset several variables with values largely unique to each observation (unique identifiers for each patient and each hospital visit), several variables with an unmanageable number of levels (the doctor's medical specialty and a code indicating how the patient paid for their stay), and one variable for which most of the values were missing (weight). 
+
+This left us with variables describing patient demographics, test results, medications, and other aspects of the patient's stay in the hospital. From this pool of variables, we eliminated many of the variables describing whether or not a patient took a specific medication or changed their dose of a specific medication because the vast majority of the observations fell into one level of the variable. Variables for which most of the observations have the same value are not very useful for making predictions because they lack variation. After eliminating these variables, we dropped all remaining observations with missing values for any variable, and we were left with 98053 observations. While the dataset readmission variable contained three levels indicated whether the patient was readmitted within 30 days, readmitted after greater than 30 days, or not readmitted during the study period, we decided to condense two of these categories (>30 and NO) into a single category in order to use modeling techniques that could make YES/NO predictions as to whether each patient would be readmitted to the hospital within 30 days. 
+
+
 
 ```{r, echo = FALSE }
 diabetic_edited_diag <- diabetic_data %>%
@@ -39,11 +59,15 @@ diabetic_edited_diag <- diabetic_data %>%
 
 Modeling
 
-We split the dataset into two evenly sized training and testing datasets in order to validate model performance on a different dataset than the one used to fit each model. Because the proportion of observations within the dataset for which the patient was readmitted within 30 days is relatively small, we stratified the testing and training datasets by readmission to ensure an even distribution of these positive observations between the two datasets.
+We split the dataset into two evenly sized training and testing datasets in order to validate model performance on a different dataset than the one used to fit each model. This gives us a sense of how each model might perform on a new dataset, which is how it would be used in a clinical setting. Because most patients in the dataset were not readmitted to the hospital within 30 days (referred to as "positives" from here on out), we stratified the testing and training datasets by readmission to ensure an even distribution of positive observations between the two datasets.
 
-We then fit a series of models to the training data and used cross validation (k = 5) or out of bag observations to optimize tuning parameters and evaluate which types of models might produce the most accurate predictions of readmission within 30 days. The types of models we applied include logistic regression, LASSO logistic regression, classification trees, and random forest. In evaluating the performance of these models, we noticed that they all had fairly low sensitivity at a probability threshold of 0.5, owing to the small proportion of observations that were positives. We explored two strategies for circumventing this problem: (1) adjusting the probability thresholds of the models to increase the sensitivity (usually at the expense of both specificity and accuracy) and (2) downsampling the folds created during cross validation to fit the model on data with a more even distribution of positives and negatives.
+We then fit a series of models to the training data, adjusted tuning parameters of each model to achieve the best fit, and evaluated which models might produce the most accurate predictions of readmidssion within 30 days. The types of models we applied include logistic regression, LASSO logistic regression, classification trees, and random forest. 
+
+In evaluating the performance of these models, we noticed that they all had fairly low sensitivity at a probability threshold of 0.5, owing to the small proportion of observations that were positives. We explored two strategies for circumventing this problem: (1) adjusting the probability thresholds of the models to increase the sensitivity (usually at the expense of both specificity and accuracy) and (2) downsampling the folds created during cross validation to fit the model on data with a more even distribution of positives and negatives.
 
 Model Evaluation on Training Data
+
+There is one important consideration in interpreting the accuracy measures for each model, which is the tradeoff between false positives (when the model predicts that a patient will be readmitted when they actually will not) and false negatives (when the model predicts that a patient will not be readmitted when they actually will). Depending on the resources available to a hospital, they may prefer to accept a high false positive rate in order to achieve a low false negative rate, in which case they would decide to provide additional health care services to some number of patients who do not really need them and most of the patients who actually need them to prevent readmission
 
 Model Evaluation on Testing Data
 

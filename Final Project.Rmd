@@ -754,9 +754,9 @@ rand_for_sample_test <- train(
 ```
 
 
-###Not Downsampled
+###Not Downsampled results
 
-##Logistic Regression
+##Logistic Regression testing results
 
 ```{r}
 summary(log_reg_test)
@@ -784,7 +784,7 @@ diag_test %>%
   auc()
 ```
 
-##Lasso Logistic
+##Lasso Logistic testing results
 
 ```{r}
 log_lasso_test$bestTune
@@ -816,7 +816,7 @@ diag_test %>%
   auc()
 ```
 
-##Classification Tree
+##Classification Tree testing results
 
 ```{r}
 class_tree_test$bestTune
@@ -853,7 +853,7 @@ diag_test %>%
   auc()
 ```
 
-##Random Forest
+##Random Forest testing results
 
 ```{r}
 rand_for_test$bestTune
@@ -888,7 +888,7 @@ diag_test %>%
 
 ###Downsampled
 
-##Logistic Regression
+##Logistic Regression downsampled testing results
 
 ```{r}
 summary(log_reg_sample_test)
@@ -917,7 +917,7 @@ diag_test %>%
   auc()
 ```
 
-##Lasso Logistic
+##Lasso Logistic downsampled testing results
 
 ```{r}
 log_lasso_sample_test$bestTune
@@ -949,7 +949,7 @@ diag_test %>%
   auc()
 ```
 
-##Classification Tree
+##Classification Tree testing results
 
 ```{r}
 class_tree_sample_test$bestTune
@@ -985,7 +985,7 @@ diag_test %>%
   auc()
 ```
 
-##Random Forest
+##Random Forest testing results
 
 ```{r}
 rand_for_sample_test$bestTune

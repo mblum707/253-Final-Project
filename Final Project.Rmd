@@ -283,7 +283,7 @@ class_tree_sample <- train(
 ```{r}
 set.seed(253)
 
-mtry_grid <- seq(2, 10, length = 10)
+mtry_grid <- seq(2, 102, length = 10)
 
 rand_for <- train(
   as.factor(readmitted_30) ~ .,

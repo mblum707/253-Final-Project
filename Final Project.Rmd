@@ -4,6 +4,8 @@ author: "Melissa Blum, Andrew Padgett, Tomas Panek"
 output: html_document
 ---
 
+#Loading Libraries
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
@@ -47,9 +49,16 @@ library(randomForest) #for bagging and random forests
 theme_set(theme_minimal())
 ```
 
-I read in the diabetes hospital readmission data in case that's what we end up using. There's one paper that's been published using the same data, so I put the link to that paper below. They used a logistic regression model with many of the variables in the dataset to predict hospital readmissions of diabetic patients - I think it would be cool to try other types of models and see if we can find one that makes more accurate predictions.
+#Introduction
 
-archive.ics.uci.edu/ml/machine-learning-databases/00296/
+In our final project, we are going to explore the database of almost 70,000 inpatient diabetes encounters. The database has been provided by Center for Clinical and Translational Research at Virginia Commonwealth University. Each of the patient record within the dataset includes a wealth of information about their health and physical characteristics, along with the resulting status whether they have been readmitted to the hospital some time after their first visit.
+
+We are going to construct statistical models that try to predit the readmission of a patient. There has been one paper that used the same data: **Impact of HbA1c Measurement on Hospital Readmission Rates: Analysis of 70,000 Clinical Database Patient Records** by *Strack et al*. They have used a logistic regression model primarily focusing on the measurement HbA1c and its effect on rate of readmission. We think it would be excellent to explore this dataset more in detail and try creating statistical models for making accurate predictions of readmission.
+
+#Data Analysis
+
+*Data Source: [archive.ics.uci.edu/ml/machine-learning-databases/00296/](archive.ics.uci.edu/ml/machine-learning-databases/00296/)*
+
 
 ```{r}
 diabetic_data <- read_csv("diabetic_data.csv", 

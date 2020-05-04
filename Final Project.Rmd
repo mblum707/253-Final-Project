@@ -59,13 +59,16 @@ We are going to construct statistical models that try to predit the readmission 
 
 *Data Source: [archive.ics.uci.edu/ml/machine-learning-databases/00296/](archive.ics.uci.edu/ml/machine-learning-databases/00296/)*
 
+There are total of 101,766 observations of 50 variables.
 
 ```{r}
-diabetic_data <- read_csv("diabetic_data.csv", 
-    na = "?")
-```
-
-```{r}
+# loading the dataset
+diabetic_data <- read_csv("diabetic_data.csv", na = "?")
+# getting the number of observations and variables
+dim(diabetic_data)
+# getting a summary of the variables
+names(diabetic_data)
+# head of the dataset
 head(diabetic_data)
 ```
 
@@ -158,16 +161,6 @@ diabetic_edited_diag <- diabetic_data %>%
   drop_na()
 
 
-```
-
-
-```{r}
-diabetic_edited <- diabetic_data %>%
-  mutate(admission_type_id = as.factor(admission_type_id),
-         admission_source_id = as.factor(admission_source_id),
-         discharge_disposition_id = as.factor(discharge_disposition_id),
-         readmitted_30 = ifelse(readmitted == "<30", 1, 0))
-  
 ```
 
 

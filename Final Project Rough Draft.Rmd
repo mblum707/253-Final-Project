@@ -12,7 +12,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
 
 Introduction
 
-Diabetes is a chronic disease which affects an alarmingly high proportion of the U.S. population. In 2018, 34.2 million people of all ages in the U.S. (or 10.5% of the population) had received a diabetes diagnosis, and an additional 7.3 million adults were estimated to have undiagnosed diabetes (1). Patients with diabetes experience high blood sugar, which can lead to diabetic emergencies like ketoacidosis if left untreated. Diabetes patients who use insulin to manage their blood sugar levels can also require emergency medical care if a dose of insulin lowers their blood sugar too far. In either of these cases, patients may need to be admitted to a hospital and monitored for several days or weeks before they can return to daily life. 
+Diabetes is a chronic disease which affects an alarmingly high proportion of the U.S. population. In 2018, 34.2 million people of all ages in the U.S. (or 10.5% of the population) had received a diabetes diagnosis, and an additional 7.3 million adults were estimated to have undiagnosed diabetes (1). Patients with diabetes experience high blood sugar, which can lead to diabetic emergencies like ketoacidosis if left untreated. Diabetes patients who use insulin to manage their blood sugar levels can also require emergency medical care if a dose of insulin lowers their blood sugar too far. In either of these cases, patients may need to be admitted to a hospital and monitored for several days or weeks before they can return to daily life. Moreover, uncontrolled diabetes may put patients at risk of developing other diseases and affect the prognosis of other diseases.
 
 Patients who repeatedly require hospital admission are exposed to the risks of extended hospital stays, such as blood clots from lying in bed and contact with infectious diseases. Because hospital visits pose risks to patients and are generally more costly to patients than preventative care (regular blood glucose monitoring, modifications to diet and exercise, diabetic medications), modeling that can accurately inform physicians about which patients are most likely to be readmitted to the hospital is valuable. Patients who are more likely to be readmitted can be provided with additional hospital resources upon discharge, such as a health care worker who vists their home once a week to check on their general health, medication compliance, and blood glucose levels. If these resources are directed effectively, it may be possible to prevent hospital readmission for the most at-risk patients by improving their ability to manage their disease. 
 
@@ -55,18 +55,19 @@ Ideally, we would just pick the model with the highest accuracy value as our bes
 
 In evaluating the performance of the four model types we decided to try, we noticed that they all had fairly low sensitivity at a probability threshold of 0.5, owing to the small proportion of YES observations out of the total number of observations. Since a higher sensitivity might be desirable for the reasons stated above, we explored two strategies for circumventing this problem: (1) adjusting the probability thresholds of the models to increase the sensitivity (usually at the expense of both specificity and accuracy) and (2) artifically changing the distribution of YES and NO observations in the data used to fit the model so that their proportions were more equal. After employing both of these strategies, we compiled a list of the model and the metrics representating their performance on the data that was used to train them. 
 
-Model | Accuracy | Sensitivity | Specificity
---------------|-------------------|------------------|-----------------
-Logistic Regression
-LASSO 
-Classification Tree
-Random Forest
-Downsampled Logistic Regression
-Downsampled LASSO
-DOwnsampled Classification Tree
-Downsampled Random Forest
+Model | Accuracy | Sensitivity | Specificity | AUC
+--------------|-------------------|------------------|-----------------|----------------
+Logistic Regression | 0.5858  | 0.67393 | 0.57469 | 0.6724
+LASSO | 0.5905 | 0.6667 | 0.5808 | 0.6722
+Classification Tree | 0.8877 | 0.0000 | 1.0000 | 0.5
+Random Forest | 0.895 | 0.27342 | 0.97369 | 0.5261
+Downsampled Logistic Regression | 0.5889 | 0.66013 | 0.57984 | 0.6688
+Downsampled LASSO | 0.8877 | 0.0000 | 1.0000 | 0.5
+Downsampled Classification Tree | 0.6416 | 0.57988 | 0.64942 | 0.6343
+Downsampled Random Forest | 0.8732 | 0.9049 | 0.8692 | 0.9546
 
 From this list, we picked three models that seemed to be performing the best in terms of their accuracy and the balance between sensitivity and specificity (#DISCUSS THIS MORE?), and we tested their performance on the testing data that we had set aside at the beginning of the modeling process. The accuracy metrics produced by this test give us a sense of how each model might perform using new patient data, since none of the models have "seen" the testing data before.
+
 
 Model | Accuracy | Sensitivity | Specificity
 --------------|-------------------|------------------|-----------------

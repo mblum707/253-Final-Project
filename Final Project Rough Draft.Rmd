@@ -9,8 +9,44 @@ output:
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
 ```
 
+```{r, echo=FALSE}
+#plotting and exploring
+library(tidyverse) #for plotting and summarizing
+library(GGally) #for nice scatterplot matrix 
+library(ggridges) #for joy/ridge plots
+library(corrplot) #for basic correlation matrix plot
+library(naniar) #for exploring missing values
+library(pdp) #for partial dependence plots, MARS models
+library(rpart.plot) #for plotting decision trees
+library(vip) #for importance plots
+library(pROC) #for ROC curves
+library(plotROC) #for plotting ROC curves
 
-Introduction
+#making things look nice
+library(lubridate) #for nice dates
+library(knitr) #for nice tables
+library(scales) #for nice labels on graphs
+library(gridExtra) #for arranging plots
+library(broom) #for nice model output
+library(janitor) #for nice names
+
+#data
+library(ISLR) #for data
+library(moderndive) #for data
+library(rattle) #weather data
+
+#modeling
+library(rsample) #for splitting data
+library(recipes) #for keeping track of transformations
+library(caret) #for modeling
+library(leaps) #for variable selection
+library(glmnet) #for LASSO
+library(earth) #for MARS models
+library(rpart) #for decision trees
+library(randomForest) #for bagging and random forests
+
+theme_set(theme_minimal())
+```
 
 Diabetes is a chronic disease which affects an alarmingly high proportion of the U.S. population. In 2018, 34.2 million people of all ages in the U.S. (or 10.5% of the population) had received a diabetes diagnosis, and an additional 7.3 million adults were estimated to have undiagnosed diabetes (1). Patients with diabetes experience high blood sugar, which can lead to diabetic emergencies like ketoacidosis if left untreated. Diabetes patients who use insulin to manage their blood sugar levels can also require emergency medical care if a dose of insulin lowers their blood sugar too far. In either of these cases, patients may need to be admitted to a hospital and monitored for several days or weeks before they can return to daily life. Moreover, uncontrolled diabetes may put patients at risk of developing other diseases and affect the prognosis of other diseases.
 
@@ -22,11 +58,11 @@ Here, we explore the ability of several different modeling techniques to predict
 
 The dataset that we use to model hospital readmission for diabetes patients contains information on 100,000 patient visits to 130 hospitals in the United States between 1999 and 2008. During each of these visits, a diabetic patient was admitted to the hospital for 1 to 14 days, received laboratory tests, and was administered medication. For each visit, the dataset also provides information on patient demographics, aspects of the patient's stay in the hospital (tests performed and medications administered, length of stay, specialty of the physician who admitted the patient), and the patent's medical history (diagnoses, number of visits to other several types of medical providers during the year before hospitalization). Using these variables, we sought to model the likelihood that patients would be readmitted to the hospital within 30 days of the recorded admission.
 
-
-
-Exploratory Plots
-
-
+```{r}
+# loading the dataset
+diabetic_data <- read_csv("diabetic_data.csv", na = "?")
+head(diabetic_data)
+```
 
 We made several data cleaning decisions to facilitate the modeling process. For the variables describing patient diagnoses, we decided to consider the impact of only the five most common diagnoses on readmission. We also removed from the dataset several variables with values largely unique to each observation (unique identifiers for each patient and each hospital visit), several variables with an unmanageable number of levels (the doctor's medical specialty and a code indicating how the patient paid for their admission), and one variable for which most of the values were missing (weight). 
 
@@ -45,13 +81,22 @@ diabetic_edited_diag <- diabetic_data %>%
   drop_na()
 ```
 
+
+
+@ANDREW, Exploratory Plots: show and discuss distribution of readmission variable, other important variables as indicated by logistic regression, variable importance plots (e.g. patient disposition, number inpatient, number emergency, etc.). Thanks!
+
+
 We split the dataset into two evenly sized training and testing datasets in order to validate model performance on a different dataset than the one used to fit each model. This gave us a sense of how each model might perform on a new dataset, which is how it would be used in a clinical setting. Because most patients in the dataset were not readmitted to the hospital within 30 days (those who were are referred to as "YES" observations from here on out), we stratified the testing and training datasets by readmission to ensure an even distribution of YES observations between the two datasets.
 
 We then fit a series of models to the training data, adjusted tuning parameters of each model to achieve the best fit, and evaluated which models might produce the most accurate predictions of readmidssion within 30 days. The types of models we applied include logistic regression, LASSO logistic regression, classification trees, and random forest. Each of these models predicts the probability that a patient will be readmitted to the hospital within 30 days, and the differences between these types of models lie in what assumptions and methods they use to reach these predictions. Each model's probability predictions are then converted to a YES/NO classification based on a probability threshold. For example, if a model's probability predictions are converted to classifications using a threshold of 0.5, than any patient for which the predicted probability of readmission is >0.5 will be classified as a YES, and any patient for which the predicted probabiltiy of readmission is <0.5 will be classified as a NO. 
 
-Once the probability predictions have been converted to classifications, we can compare those classifications to the actual value of the readmission variable for each patient to see how accurate the model is. We use several different measures of accuracy to assess how useful the model would be: accuracy, sensitivity, and specificity. Accuracy is the most intuitive of the three measures in that it describes the percentage of the time that the model's prediction matches the actual value of the readmission variable. Sensitivity is also known as the true positive rate, and it describes the percentage of the time that the model predicts a patient will be readmitted when they really were readmitted. Specificity (the true negative rate) describes the percentage of the time the model predicts a patient will not be readmitted when they really were not. Importantly, there is often a tradeoff between sensitivity and specificity, such that if we do something to the model to increase one of them, we are probably doing so at the expense of the other. 
+Once the probability predictions have been converted to classifications, we can compare those classifications to the actual value of the readmission variable for each patient to see how accurate the model is. We use several different measures of accuracy to assess how useful the model would be: accuracy, sensitivity, and specificity. Accuracy is the most intuitive of the three measures in that it describes the percentage of the time that the model's prediction matches the actual value of the readmission variable. Sensitivity (also known as the true positive rate) describes the percentage of the time that the model predicts a patient will be readmitted when they really were readmitted. Specificity (also known as the true negative rate) describes the percentage of the time the model predicts a patient will not be readmitted when they really were not. Importantly, there is often a tradeoff between sensitivity and specificity, such that if we do something to the model to increase one of them, we are probably doing so at the expense of the other. 
 
-Ideally, we would just pick the model with the highest accuracy value as our best model and use that one to predict which patients should get extra services. However, if this highly accurate model happened to have high specifity and low sensitivity, we could actually end up providing most of our extra hospital resources to patients who do not really need them. So, instead of just looking at accuracy, we need to think about how each model's sensitivity and specificity interact with the resources available to the hospital. For example, a hospital with a lot of available resources might prefer to accept low specificity in order to achieve high sensitivity, in which case they would provide additional health care services to most of the patients who actually need them to prevent readmission, and also some number of patients who do not really need them. If the hospital's resources are scarce, they might prefer a model with high specificity and low sensitivity, in which case a fair number of patients likely to be readmitted would not receive extra care, but they would also avoid giving extra resources to patients who did not need them. 
+Ideally, we would just pick the model with the highest accuracy value as our best model and use that one to predict which patients should get extra services. However, if this highly accurate model happened to have high specifity and low sensitivity, we could actually end up providing most of our extra hospital resources to patients who do not really need them. So, instead of just looking at accuracy, we need to think about how each model's sensitivity and specificity interact with the resources available to the hospital. For example, a hospital with a lot of available resources might prefer to accept low specificity in order to achieve high sensitivity, in which case they would provide additional health care services to most of the patients who actually need them to prevent readmission, and also some number of patients who do not really need them. If the hospital's resources are scarce, they might prefer a model with high specificity and low sensitivity, in which case a fair number of patients likely to be readmitted would not receive extra care, but the hospital would also avoid giving extra resources to patients who did not need them. 
+
+
+WHAT IS AUC?
+
 
 In evaluating the performance of the four model types we decided to try, we noticed that they all had fairly low sensitivity at a probability threshold of 0.5, owing to the small proportion of YES observations out of the total number of observations. Since a higher sensitivity might be desirable for the reasons stated above, we explored two strategies for circumventing this problem: (1) adjusting the probability thresholds of the models to increase the sensitivity (usually at the expense of both specificity and accuracy) and (2) artifically changing the distribution of YES and NO observations in the data used to fit the model so that their proportions were more equal. After employing both of these strategies, we compiled a list of the model and the metrics representating their performance on the data that was used to train them. 
 
@@ -66,15 +111,172 @@ Downsampled LASSO | 0.8877 | 0.0000 | 1.0000 | 0.5
 Downsampled Classification Tree | 0.6416 | 0.57988 | 0.64942 | 0.6343
 Downsampled Random Forest | 0.8732 | 0.9049 | 0.8692 | 0.9546
 
-From this list, we picked three models that seemed to be performing the best in terms of their accuracy and the balance between sensitivity and specificity (#DISCUSS THIS MORE?), and we tested their performance on the testing data that we had set aside at the beginning of the modeling process. The accuracy metrics produced by this test give us a sense of how each model might perform using new patient data, since none of the models have "seen" the testing data before.
+From this list, we eliminated two models (Classification Tree and Downsampled LASSO), which predicted that all patients would not be readmitted when the "best" tuning parameters were used to maximize model accuracy. We also identified four models that seemed to be performing the best in terms of their accuracy and the balance between sensitivity and specificity, and we decided to dive deeper into the pros and cons of each model based on its performance on the training data.
 
+@TOMAS, here is the code for fitting and evaluating the three types of models we decided to test on testing data. Feel free to delete/hide code as necessary. Maybe only show code for the model evaluation for one of these models? Thanks! Maybe also mention what effect the "important" variables highlighted in Andrew's exploratory plots have on readmission based on lasso?
 
-Model | Accuracy | Sensitivity | Specificity
---------------|-------------------|------------------|-----------------
+##Lasso Logistic (keeping b/c similar accuracy as logistic, but simpler model)
 
+```{r}
+set.seed(253)
 
+lambda_grid <- 10^seq(-4, -2, length = 100)
 
+log_lasso <- train(
+    as.factor(readmitted_30) ~ .,
+    data = diag_train,
+    method = "glmnet",
+    family = "binomial",
+    trControl = trainControl(method = "cv", number = 5),
+    tuneGrid = data.frame(alpha = 1, 
+                          lambda = lambda_grid),
+    metric = "Accuracy",
+    na.action = na.omit
+)
 
+```
+
+```{r}
+log_lasso$bestTune
+log_lasso$results
+```
+
+```{r}
+coef(log_lasso$finalModel, 0.00129155)
+```
+
+```{r}
+probsTest <- predict(log_lasso, diag_train, type = "prob")
+threshold <- 0.1
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(log_lasso, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(log_lasso, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Downsampled Classification Tree
+
+```{r}
+set.seed(253)
+
+cp_grid <- 10^seq(-4, -2, length = 100)
+
+class_tree_sample <- train(
+  as.factor(readmitted_30)~.,
+  data = diag_train,
+  method = "rpart",
+  tuneGrid = data.frame(cp = cp_grid),
+  trControl = trainControl(method = "cv", number = 5, sampling = "down"),
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+```{r}
+vip(class_tree_sample$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+rpart.plot(class_tree_sample$finalModel)
+```
+
+```{r}
+probsTest <- predict(class_tree_sample, diag_train, type = "prob")
+threshold <- 0.44
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(class_tree_sample, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(class_tree_sample, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+##Random Forests (we will test both normal and downsampled, but code is included only for normal)
+
+```{r}
+set.seed(253)
+
+mtry_grid <- seq(2, 102, length = 10)
+
+rand_for <- train(
+  as.factor(readmitted_30) ~ .,
+  data = diag_train, 
+  method = "rf",
+  trControl = trainControl(method = "oob"),
+  tuneGrid = data.frame(mtry = mtry_grid),
+  ntree = 100, 
+  importance = TRUE,
+  nodesize = 5, 
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+```{r}
+vip(rand_for$finalModel, num_features = 16, bar = FALSE)
+```
+
+```{r}
+probsTest <- predict(rand_for, diag_train, type = "prob")
+threshold <- 0.01
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+```{r}
+diag_train %>% 
+  mutate(PredRead =  predict(rand_for, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(rand_for, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
+Evaluating model performance on the training data is helpful, but it does not tell us the whole story. Sometimes, models suffer from overfitting, which occurs when a model is fit so closely to the training data that it makes highly accurate predictions on the training data, but performs poorly with new data. In order to see whether any of the four models discussed above were overfit, we tested the performance of each of these models on the testing data that we had set aside at the beginning of the modeling process. The accuracy metrics produced by this test give us a sense of how each model might perform using new patient data, since none of the models have "seen" the testing data before. Below is a table displaying the accuracy metrics for each model tested on the testing data. 
+
+Model | Accuracy | Sensitivity | Specificity | AUC
+--------------|-------------------|------------------|-----------------|-----------------
+LASSO Logistic | 0.5859 | 0.6634 | 0.5760 | 0.6704
+Random Forest | 0.8550 | 0.1146 | 0.9497 | 0.5536 
+Downsampled Random Forest | 0.6291 | 0.58024 | 0.63539 | 0.6508
+Downsampled Classification Tree | 0.6386 | 0.56351 | 0.64815 | 0.6282
+
+We can draw a few conclusions from these metrics. First, it seems like the downsampled random forest model, which performed so well on the training data, was overfit. When this model was used to make predictions on the testing data, its accuracy, sensitivity, specificity, and AUC all dropped considerably. However, the downsampled random forest model still performed comparably to the downsampled classification tree model in terms of all of these metrics. 
+
+These two models, as well as the lasso logistic model, offer similar balances of sensitivity and specificity, which would be well-suited to a hospital with plentiful resources available for allocation. All of these models make correct predictions for a fairly high proportion of patients who are readmitted (~57%), but they also incorrectly predict that about 35% of the actual NOs will be readmitted. Because the proportion of total patients who are readmitted within 30 days is low, if these models are used to allocate additional health care resources to at-risk patients, most of the patients who receive these resources (~83%) will not actually need them. However, this may be an acceptable sacrifice if it means that more of the patients who really do need these resources will get them. 
+
+In contrast, the non-downsampled random forest model retains a high accuracy and specificity, but has a low sensitivity. This model would be more useful to a hospital with fewer additional resources to allocate. If this model was used to allocate such resources, about 77% of the patients receiving additional services would not need them, which is slightly lower than for the other three models. However, only 11% of the patients that needed such services would actually receive them.
+
+Overall, hospitals seeking to apply machine learning techniques to efficiently allocate additional health care resources to diabetic patients most at-risk of being readmitted to the hospital should consider the balance of sensitivity and specificity of each model, and how it interacts with their available resources. Our analysis suggests that LASSO logistic, downsampled random forest, and downsampled classification tree models are better suited to hospitals with many available resources, while a non-downsampled random forest model could better serve hospitals with fewer resources. 
+
+The predictive accuracy of all these models is satisfactory, but could likely be improved if even more detailed data were available. For example, a patient's readmission risk could be influenced by several variables that were not used in this analysis: a more precise measure of age (not grouped by decades), weight, and indicators of socioeconomic status, just to name a few. However, we were still able to identify a few variables included in the dataset that were most important for determining readmission risk. ELABORATE HERE - WHAT DOES THIS TELL US ABOUT WAYS WE COULD DISTRIBUTE RESOURCES.
 
 
 

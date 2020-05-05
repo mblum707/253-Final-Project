@@ -1050,7 +1050,7 @@ I'm not totally sure I'm remembering this right, but I think we're supposed to t
 
 ```{r}
 probsTest <- predict(log_reg, diag_test, type = "prob")
-threshold <- 0.2
+threshold <- 0.1
 pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
 confusionMatrix(pred, as.factor(diag_test$readmitted_30), positive = "1")
 ```

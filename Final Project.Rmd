@@ -279,7 +279,7 @@ class_tree_sample <- train(
 ```
 
 ##Random Forest
-
+ 
 ```{r}
 set.seed(253)
 
@@ -302,14 +302,12 @@ rand_for <- train(
 ```{r}
 set.seed(253)
 
-# mtry_grid <- seq(2, __, length = __)
-
 rand_for_sample <- train(
   as.factor(readmitted_30) ~ .,
   data = diag_train, 
   method = "rf",
   trControl = trainControl(method = "oob", sampling = "down"),
-  tuneGrid = data.frame(mtry = c(2)),
+  tuneGrid = data.frame(mtry = mtry_grid),
   ntree = 100, 
   importance = TRUE,
   nodesize = 5, 
@@ -430,6 +428,13 @@ diag_train %>%
 rand_for$bestTune
 rand_for$results
 ```
+
+```{r}
+rand_for$results %>%
+  ggplot(aes(x = mtry, y = Accuracy)) +
+  geom_point()
+```
+
 
 ```{r}
 vip(rand_for$finalModel, num_features = 16, bar = FALSE)
@@ -560,6 +565,10 @@ diag_train %>%
 ```{r}
 rand_for_sample$bestTune
 rand_for_sample$results
+
+rand_for_sample$results %>%
+  ggplot(aes(x = mtry, y = Accuracy)) +
+  geom_point()
 ```
 
 ```{r}

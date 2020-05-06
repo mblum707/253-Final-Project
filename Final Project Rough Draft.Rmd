@@ -85,6 +85,25 @@ diabetic_edited_diag <- diabetic_data %>%
 
 @ANDREW, Exploratory Plots: show and discuss distribution of readmission variable, other important variables as indicated by logistic regression, variable importance plots (e.g. patient disposition, number inpatient, number emergency, etc.). Thanks!
 
+To get better acquainted with the data, we created some exploratory plots. The following plots display the percentage of people that fall into each category that was readmitted to the hospital within 30 days. For the first graph, the discharge disposition that return the highest percentage of people readmitted within 30 days was "still patient or expected to return for outpatient services". This makes sense because these are patients that were likely directly told to return within 30 days. However, no patients that had died returned within 30 days, which also makes sense. The lowest nonzero percentage was for patients transferred to hospice. 
+
+The second graph shows that the number of days that the patient spent in the hospital directly correlates to their likelihood of returning within 30 days. Patients that spent longer times in the hospital were more likely to return that patients who spent shorter amounts of time in the hospital. 
+
+The third graph shows that the number of emergency encounters a patient has seems to correlate with the probability of being readmitted. The data on the right side of the graph is a bit sparese, but the first 20 or so values indicate that the more emergency encounter a patient has, the more likely they are to be readmitted to the hospital within 30 days. 
+
+```{r}
+diabetic_edited_diag %>%
+  ggplot(aes(x = discharge_disposition_id)) + 
+  geom_bar(aes(fill=factor(readmitted_30)), position = "fill")
+
+diabetic_edited_diag %>%
+  ggplot(aes(x = number_inpatient)) + 
+  geom_bar(aes(fill=factor(readmitted_30)), position = "fill")
+
+diabetic_edited_diag %>%
+  ggplot(aes(x = number_emergency)) + 
+  geom_bar(aes(fill=factor(readmitted_30)), position = "fill")
+```
 
 We split the dataset into two evenly sized training and testing datasets in order to validate model performance on a different dataset than the one used to fit each model. This gave us a sense of how each model might perform on a new dataset, which is how it would be used in a clinical setting. Because most patients in the dataset were not readmitted to the hospital within 30 days (those who were are referred to as "YES" observations from here on out), we stratified the testing and training datasets by readmission to ensure an even distribution of YES observations between the two datasets.
 

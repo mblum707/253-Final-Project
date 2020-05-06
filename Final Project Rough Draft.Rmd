@@ -262,7 +262,7 @@ diag_train %>%
 @MELISSA (we will test both normal and downsampled, but code is included only for normal) - shall we include it too?
 @MELISSA This takes forever to run - I have let it work for one hour and it still did not finish. I hope you have a more powerful machine at your end to make this compile!
 
-```{r include=FALSE}
+```{r include=FALSE, cache = TRUE}
 set.seed(253)
 
 mtry_grid <- seq(2, 102, length = 10)
@@ -312,6 +312,57 @@ diag_train %>%
   roc(readmitted_30 ~ PredRead, data=.) %>%
   auc()
 ```
+
+Downsampled code
+
+```{r include = FALSE, cache = TRUE}
+set.seed(253)
+
+rand_for_sample <- train(
+  as.factor(readmitted_30) ~ .,
+  data = diag_train, 
+  method = "rf",
+  trControl = trainControl(method = "oob", sampling = "down"),
+  tuneGrid = data.frame(mtry = mtry_grid),
+  ntree = 100, 
+  importance = TRUE,
+  nodesize = 5, 
+  metric = "Accuracy",
+  na.action = na.omit
+)
+```
+
+Variable importance plot shown below highlights the variables that play a significant role in the model:
+
+```{r echo = FALSE}
+vip(rand_for_sample$finalModel, num_features = 16, bar = FALSE)
+```
+
+The confusion matrix below displays the accuracy of this model, along with specificity and sensitivity statistics:
+
+```{r echo = FALSE}
+probsTest <- predict(rand_for_sample, diag_train, type = "prob")
+threshold <- 0.6
+pred      <- factor( ifelse(probsTest[, "1"] > threshold, "1", "0") )
+confusionMatrix(pred, as.factor(diag_train$readmitted_30), positive = "1")
+```
+
+The ROC curve along with the area under it is shown below:
+
+```{r echo = FALSE}
+diag_train %>% 
+  mutate(PredRead = predict(rand_for_sample, newdata = diag_train, type = "prob")$"1") %>%
+  ggplot(aes(d = as.integer(readmitted_30), m = PredRead)) + 
+  geom_roc(labelround = 2, size = 1,
+           linealpha = .5, pointalpha = .8) +
+  geom_abline(slope = 1, intercept = 0, color = "gray")
+
+diag_train %>%
+  mutate(PredRead =  predict(rand_for_sample, newdata = diag_train, type = "prob")$"1") %>%
+  roc(readmitted_30 ~ PredRead, data=.) %>%
+  auc()
+```
+
 
 Evaluating model performance on the training data is helpful, but it does not tell us the whole story. Sometimes, models suffer from overfitting, which occurs when a model is fit so closely to the training data that it makes highly accurate predictions on the training data, but performs poorly with new data. In order to see whether any of the four models discussed above were overfit, we tested the performance of each of these models on the testing data that we had set aside at the beginning of the modeling process. The accuracy metrics produced by this test give us a sense of how each model might perform using new patient data, since none of the models have "seen" the testing data before. Below is a table displaying the accuracy metrics for each model tested on the testing data. 
 

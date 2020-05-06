@@ -69,6 +69,7 @@ We made several data cleaning decisions to facilitate the modeling process. For 
 This left us with variables describing patient demographics, test results, medications, and other aspects of the patient's stay in the hospital. From this pool of variables, we eliminated many of the variables describing whether or not a patient took a specific medication or changed their dose of a specific medication because the vast majority of the observations fell into one level of the variable. Variables for which most of the observations have the same value are not very useful for making predictions because they lack variation. After eliminating these variables, we dropped all remaining observations with missing values for any variable, and we were left with 98053 observations. While the dataset readmission variable indicated whether the patient was readmitted within 30 days, readmitted after greater than 30 days, or not readmitted during the study period, we decided to condense two of these categories (>30 days and not readmitted) into a single category in order to use modeling techniques that could make YES/NO predictions as to whether each patient would be readmitted to the hospital within 30 days.
 
 ```{r, echo = FALSE }
+# cleaning the dataset
 diabetic_edited_diag <- diabetic_data %>%
   mutate(diag_1_new = fct_lump(diag_1, n = 5),
          diag_2_new = fct_lump(diag_2, n = 5),
@@ -81,6 +82,15 @@ diabetic_edited_diag <- diabetic_data %>%
   drop_na()
 ```
 
+```{r}
+# splitting the dataset into testing and training data
+set.seed(253)
+diabetic_split_diag <- diabetic_edited_diag %>% 
+  initial_split(prop = .5, strata = readmitted_30)
+
+diag_train <- training(diabetic_split_diag)
+diag_test <-testing(diabetic_split_diag)
+```
 
 
 @ANDREW, Exploratory Plots: show and discuss distribution of readmission variable, other important variables as indicated by logistic regression, variable importance plots (e.g. patient disposition, number inpatient, number emergency, etc.). Thanks!

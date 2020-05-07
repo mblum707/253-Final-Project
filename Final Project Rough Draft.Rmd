@@ -99,7 +99,7 @@ diag_test <-testing(diabetic_split_diag)
 
 To get better acquainted with the data, we created some exploratory plots. The following plots display the percentage of people that fall into each category that was readmitted to the hospital within 30 days. For the first graph, the discharge disposition that return the highest percentage of people readmitted within 30 days was "still patient or expected to return for outpatient services". This makes sense because these are patients that were likely directly told to return within 30 days. However, no patients that had died returned within 30 days, which also makes sense. The lowest nonzero percentage was for patients transferred to hospice. 
 
-The second graph shows that the number of days that the patient spent in the hospital directly correlates to their likelihood of returning within 30 days. Patients that spent longer times in the hospital were more likely to return that patients who spent shorter amounts of time in the hospital. 
+The second graph shows that the number of other inpatient visits the patient has had documented Unsurprisingly, the more times a patient has been to the hospital, the more likely that a person is going to be readmitted within 30 days. 
 
 The third graph shows that the number of emergency encounters a patient has seems to correlate with the probability of being readmitted. The data on the right side of the graph is a bit sparese, but the first 20 or so values indicate that the more emergency encounter a patient has, the more likely they are to be readmitted to the hospital within 30 days. 
 
@@ -110,11 +110,11 @@ diabetic_edited_diag %>%
   geom_bar(aes(fill=factor(readmitted_30)), position = "fill") +
   xlab("Discharge Disposition Type") + ylab("Count") + labs(fill = "Being Readmitted")
 
-# probability of being readmitted based on hospital stay length
+# probability of being readmitted based on number of inpatient visits
 diabetic_edited_diag %>%
   ggplot(aes(x = number_inpatient)) + 
   geom_bar(aes(fill=factor(readmitted_30)), position = "fill") +
-  xlab("Hospital Stay Length (Days)") + ylab("Count") + labs(fill = "Being Readmitted")
+  xlab("Number of Inpatient Visits") + ylab("Count") + labs(fill = "Being Readmitted")
 
 # probability of being readmitted based on the number of emergency encounters
 diabetic_edited_diag %>%

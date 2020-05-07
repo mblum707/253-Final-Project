@@ -150,6 +150,8 @@ From this list, we eliminated two models (Classification Tree and Downsampled LA
 
 ##LASSO Logistic Model
 
+Below is the code used to fit the first of the four models, a LASSO logistic regression model. We fit the model to the training data using a technique called cross-validation, which will let us assess how accurate the model is without touching our testing data, which we are saving to use on only the few best models later on. We also want to determine the best value of the tuning parameter lambda, which helps determine how many coefficients will appear in the final model. The code below tries fitting the model with a range of possible lambda values, and determines what the best value is for maximizing model accuracy. 
+
 ```{r include=FALSE}
 set.seed(253)
 lambda_grid <- 10^seq(-4, -2, length = 100)
@@ -171,11 +173,13 @@ log_lasso$bestTune
 log_lasso$results
 ```
 
-```{r include=FALSE}
+Below are the coefficients for the LASSO logistic regression model based on the best value of lambda. This method penalizes the model for having too many coefficients or large coefficients in order to generate a simpler model that incorporates only the most important variables. We can see that some of the variables used to fit that model have coefficients that have been reduced down to zero (those marked with .). The remaining non-zero coefficients, especially those that are larger in magnitude, tell us which variables are most important for predicting readmission. The exponentiated value of each coefficient describes how the given variables affects the predicted probability of readmission. For example, the expontiated coefficient for number_inpatient is 1.299654, which tells us that for each additional inpatient visit that the patient had in the year prior to the recorded hospital admission, the odds that they will be readmitted to the hospital within 30 days increase by 29.9%.   
+
+```{r echo = false}
 coef(log_lasso$finalModel, 0.00129155)
 ```
 
-The confusion matrix below displays the accuracy of this model, along with specificity and sensitivity statistics:
+The confusion matrix below displays the accuracy of this model, along with specificity and sensitivity statistics. The probability threshold of 0.1 was chosen based on the ROC curve below, which shows that a threshold of 0.1 is the closest point on the curve to the top left corner of the graph. Therefore, this threshold provides a good balance of sensitivity and specificity.
 
 ```{r echo=FALSE}
 probsTest <- predict(log_lasso, diag_train, type = "prob")
@@ -203,7 +207,11 @@ diag_train %>%
 
 ##Downsampled Classification Tree
 
-```{r include=FALSE}
+Below is the code used to fit the second of our four models, a classification tree. This model works by separating the data at branch points such that a data point gets sorted into one branch if its value of a certain variable is above a threshold, and the other branch if its value of that variable is below the threshold. Data points move down the tree through successive branch points until they reach a node at the bottom of the tree. The model then predicts that all data points in a shared node will have the same predicted probability of readmission, and branch points are chosen to minimize the error of these predictions. Like the LASSO logistic regression model, the classification tree has a tuning parameter called the complexity parameter (cp), which helps determine the optimal number of branches in the tree. The code below fits the model to the training data and selects the best value of cp for maximizing model accuracy. 
+
+Also note that the data used to fit this model has been dowmsampled (see method sampling = "down" under trControl). 
+
+```{r echo=FALSE}
 set.seed(253)
 
 cp_grid <- 10^seq(-4, -2, length = 100)
@@ -219,13 +227,13 @@ class_tree_sample <- train(
 )
 ```
 
-Variable importance plot shown below highlights the variables that play a significant role in the model:
+The variable importance plot shown below highlights the variables that play a significant role in the classification tree. However, this plot does not allow us to see what effect each of these variables has on the probability of readmission.
 
 ```{r echo=FALSE}
 vip(class_tree_sample$finalModel, num_features = 16, bar = FALSE)
 ```
 
-Eventually, the decision tree can be visualized very nicely:
+If we want to visualize what role each of these variables plays, the decision tree can be visualized very nicely:
 
 ```{r echo=FALSE}
 rpart.plot(class_tree_sample$finalModel)
@@ -261,6 +269,8 @@ diag_train %>%
 
 @MELISSA (we will test both normal and downsampled, but code is included only for normal) - shall we include it too?
 @MELISSA This takes forever to run - I have let it work for one hour and it still did not finish. I hope you have a more powerful machine at your end to make this compile!
+
+
 
 ```{r include=FALSE, cache = TRUE}
 set.seed(253)

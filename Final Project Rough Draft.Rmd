@@ -267,9 +267,6 @@ diag_train %>%
 
 ##Random Forests
 
-@MELISSA (we will test both normal and downsampled, but code is included only for normal) - shall we include it too?
-@MELISSA This takes forever to run - I have let it work for one hour and it still did not finish. I hope you have a more powerful machine at your end to make this compile!
-
 Below is the code used to fit the third of the four models, a random forest model. Random forest models average together the results of many different classification trees fit to the training data in order to try to produce more accurate predictions. The tuning parameter here is called mtry, and it determine how restricted the process of fitting each tree is for the algorithm. A more restricted process leads to trees that are more different from each other, which can affect how much accuracy is gained by averaging together their predictions. Note that we also use a slightly different method here ("oob", or out of bag) to evaluate model accuracy without using the testing data. This method will still allow us to assess the same accuracy metrics, and it runs much faster than cross validation for this type of model.
 
 ```{r include=FALSE, cache = TRUE}
@@ -374,6 +371,11 @@ diag_train %>%
   roc(readmitted_30 ~ PredRead, data=.) %>%
   auc()
 ```
+
+Based on this analysis, both of the random forest models have higher accuracy. The non-downsampled model has high specificity and low sensitivity, whereas the downsampled model has fairly high values for both specificity and sensitivity. The LASSO and downsampled classification tree models have lower accuracy, and they offer different balances of sensitivity and specificity. The LASSO model has slightly lower sensitivity than specificity, whereas the downsampled classification tree has lower specificity than sensitivity. These models also provide insight as to which variables are most important for prediction readmission. For example, number_inpatient, a variable which describes the number of times the patient had an inpatient visit in the year before the recorded visit, showed up pretty high on all the variable importance plots, and additional inpatient visits appeared to increase the odds of readmission in the LASSO logistic model. 
+
+Evaluating model performance on the training data is helpful, but it does not tell us the whole story. Sometimes, models suffer from overfitting, which occurs when a model is fit so closely to the training data that it makes highly accurate predictions on the training data, but performs poorly with new data. In order to see whether any of the four models discussed above were overfit, we tested the performance of each of these models on the testing data that we had set aside at the beginning of the modeling process. The accuracy metrics produced by this test give us a sense of how each model might perform using new patient data, since none of the models have "seen" the testing data before. Below is a table displaying the accuracy metrics for each model tested on the testing data. 
+
 
 Model | Accuracy | Sensitivity | Specificity | AUC
 --------------|-------------------|------------------|-----------------|-----------------
